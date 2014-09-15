@@ -1,0 +1,12 @@
+Changes
+
+0.0.3
+
++ Added setuid/setgid to the BackupPC user (backuppc)
++ Added support for hosts with disabled backups
+
+
+0.0.2
+
+- Fixed typo in crontab example
++ Minor code improvement

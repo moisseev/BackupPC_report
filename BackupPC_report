@@ -1,0 +1,328 @@
+#!/usr/bin/perl -T
+
+#============================================================= -*-perl-*-
+# BackupPC_report
+#========================================================================
+# Version 0.0.3, released 2013-01-13
+#========================================================================
+
+use strict;
+use warnings;              # global flag -w produces warnings from BackupPC::Lib
+use lib '/usr/local/lib';  # change path prefix to match your installation
+use BackupPC::Lib;
+use POSIX qw( getuid getgid setuid setgid floor );
+use Getopt::Long;
+use Pod::Usage;
+
+our ( $opt_a, $opt_s, $opt_w, $opt_help, $opt_man );
+GetOptions( "a", "s", "w=i", "help|?", "man" ) || pod2usage(2);
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
+pod2usage(1) if $opt_help;
+
+# Set backuppc UID/GID
+my ( undef, undef, $bpcUID, $bpcGID ) = getpwnam('backuppc');
+setuid($bpcUID) if ( getuid() != $bpcUID );
+setgid($bpcGID) if ( getgid() != $bpcGID );
+
+my $bpc = BackupPC::Lib->new( '', '', '', 0 )
+  or die "BackupPC::Lib->new failed\n";
+
+my @backups;    # info on all backups of one host
+
+my @hosts = sort keys %{ $bpc->HostInfoRead() };    # array of hosts
+
+# print 'hosts =>', (join '<, >', @hosts), "<=\n";
+
+my ( $lastStartTime, @Report );
+my $warnOutdated = my $warnErr = my $hostsDisabled = 0;
+my $hostColWidth = 9;
+
+for my $host ( @ARGV ? @ARGV : @hosts ) {
+
+    # Read the host-specific config
+    if ( defined( my $error = $bpc->ConfigRead($host) ) ) {
+        print("*ERROR* Can't read $host host's configuration file: $error\n");
+        next;
+    }
+
+    next if ( $bpc->{Conf}{XferMethod} eq "archive" );
+
+    if ($opt_a) {
+        unless ( @backups = $bpc->BackupInfoRead($host) ) {
+            print "*ERROR* Can't get backup info for host $host\n";
+            next;
+        }
+    }
+    else {
+        # [-1] in the line below implies most recent backup for each host.
+        unless ( @backups = ( $bpc->BackupInfoRead($host) )[-1] ) {
+            print "*ERROR* Can't get backup info for host $host\n";
+            next;
+        }
+    }
+
+    for (@backups) {
+
+        # exploring the data structure:
+        # print "$_=>", join (',', map { "$_=$backup->{$_}" } sort keys %$backup), "<=\n";
+
+        push @Report, [
+            "",    # warning flags
+            $_->{num},
+            $host,
+            POSIX::strftime( '%Y-%m-%d %H:%M', localtime $_->{startTime} ),
+            $_->{size} / 1024 / 1024,                    # size (MB)
+            $_->{level},
+            ( $_->{endTime} - $_->{startTime} ) / 60,    # duration in minutes
+
+            $_->{xferErrs},
+            $_->{xferBadShare},
+            $_->{xferBadFile},
+            $_->{tarErrs},
+
+            # Backup age in days, rounded to floor
+            floor( ( time - $_->{startTime} ) / ( 24 * 3600 ) )
+        ];
+
+        # Rise warning on errors
+        if (   $_->{xferErrs}
+            || $_->{xferBadShare}
+            || $_->{xferBadFile}
+            || $_->{tarErrs} )
+        {
+            $warnErr = 1
+              unless $bpc->{Conf}{BackupsDisable};
+            $Report[$#Report][0] = $Report[$#Report][0] . "E";
+        }
+
+    }
+
+    $hostColWidth = length $host if ( length $host > $hostColWidth );
+
+    # Get backup period for current host.
+    my $period;
+    if ( $bpc->{Conf}{FullPeriod} <= 0 || $bpc->{Conf}{IncrPeriod} <= 0 ) {
+        print(
+            "*WARNING* nonpositive '\$Conf{FullPeriod}' or '\$Conf{IncrPeriod}' configured for host $_. Using 1d instead.\n"
+        );
+        $period = 1;
+    }
+    else {
+        $period = (
+              $bpc->{Conf}{IncrPeriod} < $bpc->{Conf}{FullPeriod}
+            ? $bpc->{Conf}{IncrPeriod}
+            : $bpc->{Conf}{FullPeriod}
+        );
+    }
+
+    # Rise warning if start time of most recent backup is older than
+    # $period days + backup window
+    if (
+        time > (
+            $backups[-1]->{startTime} +
+              $period * 86400 +
+              ( $opt_w ? $opt_w : 1 ) * 3600
+        )
+      )
+    {
+        $warnOutdated = 1
+          unless $bpc->{Conf}{BackupsDisable};
+        $Report[$#Report][0] = $Report[$#Report][0] . "O";
+    }
+
+    if ( $bpc->{Conf}{BackupsDisable} ) {
+        $Report[$#Report][0] = $Report[$#Report][0] . "D";
+        $hostsDisabled++;
+    }
+}
+
+# Supress report if no warnings
+!$opt_s || $warnOutdated || $warnErr || exit 0;
+
+# Print report header
+print POSIX::strftime( '%Y-%m-%d %H:%M', localtime(time) ), "       ",
+  scalar @hosts, " host(s) configured ($hostsDisabled disabled)\n\n";
+print "*WARNING* Some backups with ERRORs!", "\n\n" if $warnErr;
+print "*WARNING* Most recent backups for some hosts are older than expected!",
+  "\n\n"
+  if $warnOutdated;
+
+# Print table header
+printf "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
+  "wrn", "backup", "host name", "date/time", "size", "", "durat.",
+  "xfer", "Share", "File", "tar", "age";
+printf
+  "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %-4s %-5s %-4s %3s | %6s\n",
+  "flg", "number", "", "", "(MB)", "lvl", "(min)",
+  "Err", "Err", "Err", "Err", "(days)";
+print "-" x ( $hostColWidth + 77 ), "\n";
+
+# Print rest of table
+map {
+    printf
+      "%3s [%4d] %-${hostColWidth}s %-16s %6.f %3d %6.f | %4d %5d %4d %3d | %6d\n",
+      @$_;
+  } @Report
+
+__END__
+
+=head1 NAME
+
+BackupPC_report - reporting tool for BackupPC
+
+=head1 SYNOPSIS
+
+B<BackupPC_report> [options] [ F<host>...]
+
+B<BackupPC_report> --help|-?|--man
+
+=head1 DESCRIPTION
+
+The BackupPC_report(1) is a Perl script that produces reports regarding BackupPC
+backups on STDOUT.
+
+Brief reports provide a quick overview of available backups,
+calling out warnings that may require attention.
+
+=head2 Warning flags
+
+BackupPC_report(1) marks corresponding rows with flags and prepends warning messages to the head
+of the report if backups included in report has errors or most recent backups
+for some hosts are older than expected.
+
+Flags:
+
+=over
+
+=item B<E>
+
+Erorrs occured during backup.
+
+=item B<O>
+
+Most recent backup is older then expected.
+
+=item B<D>
+
+Backups disabled for this host.
+
+=back
+
+=head1 ARGUMENTS
+
+Multiple space separated F<host> arguments may be specified, each processed in order.
+If argument omitted, report will be generated for all hosts.
+
+Note: any reports not include archive hosts.
+
+=head1 OPTIONS
+
+=over
+
+=item  B<-a>
+
+Include all available backups in the report. Default recent backups only.
+
+=item  B<-s>
+
+Supress output if no warnings. Useful in conjunction with B<mail -E>.
+See crontab example below.
+
+=item  B<-w> I<backup_window>
+
+Backup window, hours (floating). Is a difference between earliest expected
+backup start time and latest expected backup completion time. Default 1 hour.
+If start time of most recent backup for a host is older than sum of
+I<$Conf{IncrPeriod}> (or I<$Conf{FullPeriod}> if incremental backups disabled)
+and backup window then warning flag "O" will be set to corresponded report row
+and warning message prepended to report header.
+
+=item B<--help -?>
+
+Brief help.
+
+=item B<--man>
+
+Full documentation.
+
+=back
+
+=head1 REQUIREMENTS
+
+=over
+
+=item *
+
+A Linux, Solaris, or Unix based server.
+
+=item *
+
+Perl version 5.8.0 or later.  If you don't have perl, please
+see L<http://www.cpan.org>.
+
+=item *
+
+Installed BackupPC backup system. See L<http://backuppc.sourceforge.net>.
+
+=back
+
+=head1 INSTALLATION
+
+=over
+
+=item 1
+
+Place BackupPC_report where you want.
+
+=item 2
+
+Change lib path at beginning of the script code to match your installation.
+Default is /usr/local/lib .
+
+=back
+
+=head1 EXAMPLES
+
+To get report consist of most recent backups for all hosts:
+
+B<[su -m backuppc -c] BackupPC_report>
+
+To get report consist of all available backups for specified hosts:
+
+B<[su -m backuppc -c] "BackupPC_report -a> F<host1 host2>">
+
+Cron jobs to get reports in mailbox at schedule:
+
+ # Send report at Monday morning
+ 5  8  *  *  1    /somedir/BackupPC_report | mail -s "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` weekly report" root
+ # Other days send report only if it has warnings.
+ 5  8  *  *  2-7  /somedir/BackupPC_report -s | mail -Es "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` warning" root
+
+=head1 AUTHOR
+
+S<Alexander Moisseev E<lt>moiseev@mezonplus.ruE<gt>>
+
+=head1 CREDITS
+
+Idea and initial quick-hack script by Holger Parplies
+
+=head1 LICENSE and COPYRIGHT
+
+ Copyright (c) 2012 Alexander Moisseev
+ All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License in the
+LICENSE file along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+
+=cut
