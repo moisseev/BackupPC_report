@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/perl
 
 #============================================================= -*-perl-*-
 # BackupPC_report
@@ -14,15 +14,31 @@ use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
 use Pod::Usage;
 
+my $bpcUser = 'backuppc';
+
+#
+# Clean up %ENV for taint checking.
+# Untaint path to groff that required to display POD.
+#
+delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+$ENV{PATH} = '/usr/bin';
+
 our ( $opt_a, $opt_s, $opt_w, $opt_help, $opt_man );
 GetOptions( "a", "s", "w=f", "help|?", "man" ) || pod2usage(2);
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
 pod2usage(1) if $opt_help;
 
 # Set backuppc UID/GID
-my ( undef, undef, $bpcUID, $bpcGID ) = getpwnam('backuppc');
+my ( undef, undef, $bpcUID, $bpcGID ) = getpwnam($bpcUser);
 setuid($bpcUID) if ( getuid() != $bpcUID );
 setgid($bpcGID) if ( getgid() != $bpcGID );
+
+#
+# Verify we are running as the correct user
+#
+die "Wrong user: my userid is $>, instead of $bpcUID ($bpcUser).
+Please su [-m] $bpcUser first.\n"
+  if ( $> != $bpcUID );
 
 my $bpc = BackupPC::Lib->new( '', '', '', 0 )
   or die "BackupPC::Lib->new failed\n";
