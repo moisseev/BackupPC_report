@@ -188,9 +188,9 @@ BackupPC_report - reporting tool for BackupPC
 
 =head1 SYNOPSIS
 
-B<BackupPC_report> [options] [ F<host>...]
+B<BackupPC_report> [options] [F<host> ...]
 
-B<BackupPC_report> --help|-?|--man
+B<BackupPC_report> --help | -? | --man
 
 =head1 DESCRIPTION
 
@@ -202,9 +202,9 @@ calling out warnings that may require attention.
 
 =head2 Warning flags
 
-BackupPC_report(1) marks corresponding rows with flags and prepends warning messages to the head
-of the report if backups included in report has errors or most recent backups
-for some hosts are older than expected.
+BackupPC_report(1) marks corresponding rows with flags and prepends warning
+messages to the head of the report if backups included in the report have
+errors or the most recent backups for some hosts are older than expected.
 
 Flags:
 
@@ -212,22 +212,22 @@ Flags:
 
 =item B<E>
 
-Erorrs occured during backup.
+errors occurred during the backup;
 
 =item B<O>
 
-Most recent backup is older then expected.
+the most recent backup is older than expected;
 
 =item B<D>
 
-Backups disabled for this host.
+backups disabled for this host.
 
 =back
 
 =head1 ARGUMENTS
 
 Multiple space separated F<host> arguments may be specified, each processed in order.
-If argument omitted, report will be generated for all hosts.
+If argument is omitted, the report will be generated for all hosts.
 
 Note: any reports not include archive hosts.
 
@@ -237,21 +237,23 @@ Note: any reports not include archive hosts.
 
 =item  B<-a>
 
-Include all available backups in the report. Default recent backups only.
+Include all available backups in the report. The default is the most recent
+backups only.
 
 =item  B<-s>
 
-Supress output if no warnings. Useful in conjunction with B<mail -E>.
+Suppress output if there are no warnings. Useful in conjunction with B<mail -E>.
 See crontab example below.
 
 =item  B<-w> I<backup_window>
 
-Backup window, hours (floating). Is a difference between earliest expected
-backup start time and latest expected backup completion time. Default 1 hour.
-If start time of most recent backup for a host is older than sum of
-I<$Conf{IncrPeriod}> (or I<$Conf{FullPeriod}> if incremental backups disabled)
-and backup window then warning flag "O" will be set to corresponded report row
-and warning message prepended to report header.
+Specify a backup window in hours (floating). The backup window is a difference
+between the earliest expected backup start time and the latest expected backup
+completion time. The default is 1 hour.
+If start time of the most recent backup for a host is older than sum of
+I<$Conf{IncrPeriod}> (or I<$Conf{FullPeriod}> if incremental backups are disabled)
+and the backup window then warning flag "O" will be set to corresponded report row
+and warning message perpended to the report header.
 
 =item B<--help -?>
 
@@ -273,7 +275,7 @@ A Linux, Solaris, or Unix based server.
 
 =item *
 
-Perl version 5.8.0 or later.  If you don't have perl, please
+Perl version 5.8.0 or later.  If you do not have Perl, please
 see L<http://www.cpan.org>.
 
 =item *
@@ -292,20 +294,20 @@ Place BackupPC_report where you want.
 
 =item 2
 
-Change lib path at beginning of the script code to match your installation.
-Default is /usr/local/lib .
+Change lib path at the beginning of the script code to match your installation.
+The default is /usr/local/lib .
 
 =back
 
 =head1 EXAMPLES
 
-To get report consist of most recent backups for all hosts:
+To get report consist of the most recent backups for all hosts:
 
 B<[su -m backuppc -c] BackupPC_report>
 
-To get report consist of all available backups for specified hosts:
+To get report consist of all available backups for the specified hosts:
 
-B<[su -m backuppc -c] "BackupPC_report -a> F<host1 host2>">
+B<[su -m backuppc -c] "BackupPC_report -a F<host1 host2>">
 
 Cron jobs to get reports in mailbox at schedule:
 
@@ -316,15 +318,15 @@ Cron jobs to get reports in mailbox at schedule:
 
 =head1 AUTHOR
 
-S<Alexander Moisseev E<lt>moiseev@mezonplus.ruE<gt>>
+Alexander Moisseev E<lt>moiseev@mezonplus.ruE<gt>
 
 =head1 CREDITS
 
-Idea and initial quick-hack script by Holger Parplies
+Idea and initial quick-hack script by Holger Parplies.
 
 =head1 LICENSE and COPYRIGHT
 
- Copyright (c) 2012 Alexander Moisseev
+ Copyright (c) 2012-2014 Alexander Moisseev
  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
