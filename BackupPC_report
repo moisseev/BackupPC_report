@@ -8,7 +8,7 @@
 
 use strict;
 use warnings;              # global flag -w produces warnings from BackupPC::Lib
-use lib '/usr/local/lib';  # change path prefix to match your installation
+use lib '/usr/local/lib';  # <<< change path prefix to match your installation
 use BackupPC::Lib;
 use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
@@ -295,7 +295,8 @@ Place BackupPC_report where you want.
 =item 2
 
 Change lib path at the beginning of the script code to match your installation.
-The default is /usr/local/lib .
+E.g. for Debian/Ubuntu the lib path should be I</usr/share/backuppc/lib> .
+The default is I</usr/local/lib> .
 
 =back
 
