@@ -1,5 +1,14 @@
 Changes
 
+0.0.4
+
+- Fixed backup window (-w) option value type
+- Removed "-T" from shebang
++ Cleaned up %ENV for taint checking
++ Untainted path to groff that required to display POD
++ Added effective uid verification
+- Minor POD fixes
+
 0.0.3
 
 + Added setuid/setgid to the BackupPC user (backuppc)
