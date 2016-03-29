@@ -30,6 +30,8 @@ pod2usage(1) if $opt_help;
 
 # Set backuppc UID/GID
 my ( undef, undef, $bpcUID, $bpcGID ) = getpwnam($bpcUser);
+defined $bpcUID
+  or die "user $bpcUser does not exist\n";
 setuid($bpcUID) if ( getuid() != $bpcUID );
 setgid($bpcGID) if ( getgid() != $bpcGID );
 
