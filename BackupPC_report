@@ -314,10 +314,10 @@ B<[su -m backuppc -c] "BackupPC_report -a F<host1 host2>">
 
 Cron jobs to get reports in mailbox at schedule:
 
- # Send report at Monday morning
- 5  8  *  *  1    /somedir/BackupPC_report | mail -s "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` weekly report" root
- # Other days send report only if it has warnings.
- 5  8  *  *  2-7  /somedir/BackupPC_report -s | mail -Es "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` warning" root
+ # Send reports on Monday mornings
+ 5  8  *  *  1    /usr/local/bin/perl /somedir/BackupPC_report | mail -s "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` weekly report" root
+ # Other days send report only if it has warnings
+ 5  8  *  *  2-7  /usr/local/bin/perl /somedir/BackupPC_report -s | mail -Es "BackupPC@`hostname` `date '+\%Y-\%m-\%d \%H:\%M'` warning" root
 
 =head1 AUTHOR
 
