@@ -14,6 +14,8 @@ use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
 use Pod::Usage;
 
+use vars qw(%Conf);
+
 my $bpcUser = 'backuppc';
 
 #
@@ -44,6 +46,9 @@ Please su [-m] $bpcUser first.\n"
 
 my $bpc = BackupPC::Lib->new( '', '', '', 0 )
   or die "BackupPC::Lib->new failed\n";
+
+%Conf = $bpc->Conf(); 
+my $SvrURL = $Conf{CgiURL};    # set URL
 
 my @backups;    # info on all backups of one host
 
@@ -164,6 +169,9 @@ print "*WARNING* Some backups with ERRORs!", "\n\n" if $warnErr;
 print "*WARNING* Most recent backups for some hosts are older than expected!",
   "\n\n"
   if $warnOutdated;
+
+# Print BackupPC URL
+printf "\nURL: $SvrURL\n\n";
 
 # Print table header
 printf "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
