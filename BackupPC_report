@@ -8,7 +8,7 @@
 
 use strict;
 use warnings;              # global flag -w produces warnings from BackupPC::Lib
-use lib '/usr/local/lib';  # <<< change path prefix to match your installation
+use lib '/usr/share/BackupPC/lib';  # <<< change path prefix to match your installation
 use BackupPC::Lib;
 use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
