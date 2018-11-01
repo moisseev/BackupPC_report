@@ -10,7 +10,6 @@ use strict;
 use warnings;              # global flag -w produces warnings from BackupPC::Lib
 use lib '/usr/local/lib';  # <<< change path prefix to match your installation
 use BackupPC::Lib;
-our (%Conf);  # load %Conf value from BackupPC::Lib
 use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
 use Pod::Usage;
@@ -45,8 +44,6 @@ Please su [-m] $bpcUser first.\n"
 
 my $bpc = BackupPC::Lib->new( '', '', '', 0 )
   or die "BackupPC::Lib->new failed\n";
-
-%Conf = $bpc->Conf(); 
 
 my @backups;    # info on all backups of one host
 
@@ -168,7 +165,7 @@ print "*WARNING* Most recent backups for some hosts are older than expected!",
   if $warnOutdated;
 
 # Print BackupPC URL
-printf "\nURL: $Conf{CgiURL}\n\n";
+printf "\nURL: $bpc->{Conf}{CgiURL}\n\n";
 
 # Print table header
 printf "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
