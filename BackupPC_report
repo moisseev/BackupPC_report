@@ -3,7 +3,7 @@
 #========================================================================
 # BackupPC_report
 #========================================================================
-# Version 0.0.5
+# Version 0.0.6
 #========================================================================
 
 use strict;
@@ -112,7 +112,6 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
               unless $bpc->{Conf}{BackupsDisable};
             $Report[$#Report][0] = $Report[$#Report][0] . "E";
         }
-
     }
 
     $hostColWidth = length $host if ( length $host > $hostColWidth );
@@ -164,6 +163,9 @@ print "*WARNING* Some backups with ERRORs!", "\n\n" if $warnErr;
 print "*WARNING* Most recent backups for some hosts are older than expected!",
   "\n\n"
   if $warnOutdated;
+
+# Print BackupPC URL
+printf "\nURL: $bpc->{Conf}{CgiURL}\n\n";
 
 # Print table header
 printf "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
