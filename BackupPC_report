@@ -110,7 +110,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
         {
             $warnErr = 1
               unless $bpc->{Conf}{BackupsDisable};
-            $Report[$#Report][0] = $Report[$#Report][0] . "E";
+            $Report[$#Report][0] .= "E";
         }
     }
 
@@ -144,11 +144,11 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
     {
         $warnOutdated = 1
           unless $bpc->{Conf}{BackupsDisable};
-        $Report[$#Report][0] = $Report[$#Report][0] . "O";
+        $Report[$#Report][0] .= "O";
     }
 
     if ( $bpc->{Conf}{BackupsDisable} ) {
-        $Report[$#Report][0] = $Report[$#Report][0] . "D";
+        $Report[$#Report][0] .= "D";
         $hostsDisabled++;
     }
 }
