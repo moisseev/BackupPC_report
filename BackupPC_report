@@ -52,7 +52,7 @@ my @hosts = sort keys %{ $bpc->HostInfoRead() };    # array of hosts
 # print 'hosts =>', (join '<, >', @hosts), "<=\n";
 
 my ( $lastStartTime, @Report );
-my $warnOutdated = my $warnErr = my $hostsDisabled = 0;
+my $warnOutdated = my $warnErr = my $hostsDisabled = my $warnActive = my $warnPartial = 0;
 my $hostColWidth = 9;
 
 for my $host ( @ARGV ? @ARGV : @hosts ) {
@@ -80,18 +80,19 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
     }
 
     for (@backups) {
-
-        # exploring the data structure:
-        # print "$_=>", join (',', map { "$_=$backup->{$_}" } sort keys %$backup), "<=\n";
+        my $active = $_->{type} eq 'active';
 
         push @Report, [
-            "",    # warning flags
+            $active ? '*' : '',    # warning flags
             $_->{num},
             $host,
             POSIX::strftime( '%Y-%m-%d %H:%M', localtime $_->{startTime} ),
-            $_->{size} / 1024 / 1024,                    # size (MB)
+            $_->{size} / 1024 / 1024,    # Size (MB)
             $_->{level},
-            ( $_->{endTime} - $_->{startTime} ) / 60,    # duration in minutes
+
+            # Duration in minutes
+            $active ? '*' : '',          # The backup is in progress
+            ( ( $active ? time : $_->{endTime} ) - $_->{startTime} ) / 60,
 
             $_->{xferErrs},
             $_->{xferBadShare},
@@ -101,6 +102,15 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
             # Backup age in days, rounded to floor
             floor( ( time - $_->{startTime} ) / ( 24 * 3600 ) )
         ];
+
+        if ($active) {
+            $warnActive = 1;
+        }
+        elsif ( $_->{type} eq 'partial' ) {
+            $warnPartial = 1
+              unless $bpc->{Conf}{BackupsDisable};
+            $Report[$#Report][0] .= "P";
+        }
 
         # Rise warning on errors
         if (   $_->{xferErrs}
@@ -154,7 +164,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
 }
 
 # Supress report if no warnings
-!$opt_s || $warnOutdated || $warnErr || exit 0;
+!$opt_s || $warnOutdated || $warnErr || $warnActive || $warnPartial || exit 0;
 
 # Print report header
 print POSIX::strftime( '%Y-%m-%d %H:%M', localtime(time) ), "       ",
@@ -163,24 +173,26 @@ print "*WARNING* Some backups with ERRORs!", "\n\n" if $warnErr;
 print "*WARNING* Most recent backups for some hosts are older than expected!",
   "\n\n"
   if $warnOutdated;
+print "*WARNING* There are in-progress backups!", "\n\n" if $warnActive;
+print "*WARNING* There are partial backups!",     "\n\n" if $warnPartial;
 
 # Print BackupPC URL
 printf "\nURL: $bpc->{Conf}{CgiURL}\n\n";
 
 # Print table header
-printf "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
-  "wrn", "backup", "host name", "date/time", "size", "", "durat.",
+printf "%4s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %4s %5s %4s %3s | %6s\n",
+  "warn", "backup", "host name", "date/time", "size", "", "durat.",
   "xfer", "Share", "File", "tar", "age";
 printf
-  "%3s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %-4s %-5s %-4s %3s | %6s\n",
-  "flg", "number", "", "", "(MB)", "lvl", "(min)",
+  "%4s %6s %-${hostColWidth}s %-16s %6s %3s %6s | %-4s %-5s %-4s %3s | %6s\n",
+  "flag", "number", "", "", "(MB)", "lvl", "(min)",
   "Err", "Err", "Err", "Err", "(days)";
-print "-" x ( $hostColWidth + 77 ), "\n";
+print "-" x ( $hostColWidth + 78 ), "\n";
 
-# Print rest of table
+# Print the rest of the table
 map {
     printf
-      "%3s [%4d] %-${hostColWidth}s %-16s %6.f %3d %6.f | %4d %5d %4d %3d | %6d\n",
+      "%4s [%4d] %-${hostColWidth}s %-16s %6.f %3d %1s%5.f | %4d %5d %4d %3d | %6d\n",
       @$_;
   } @Report
 
@@ -213,6 +225,14 @@ errors or the most recent backups for some hosts are older than expected.
 Flags:
 
 =over
+
+=item B<*>
+
+the backup is in progress;
+
+=item B<P>
+
+the backup is partial;
 
 =item B<E>
 
