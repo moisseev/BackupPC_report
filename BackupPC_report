@@ -87,12 +87,12 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
             $_->{num},
             $host,
             POSIX::strftime( '%Y-%m-%d %H:%M', localtime $_->{startTime} ),
-            $_->{size} / 1024 / 1024,    # Size (MB)
+            $_->{size} eq '' ? '' : sprintf( '%.f', $_->{size} / 1024 / 1024 ),    # Size (MB)
             $_->{level},
 
             # Duration in minutes
-            $active ? '*' : '',          # The backup is in progress
-            ( ( $active ? time : $_->{endTime} ) - $_->{startTime} ) / 60,
+            $active ? '*' : '',                                                    # The backup is in progress
+            $_->{endTime} eq '' ? '' : sprintf( '%.f', ( ( $active ? time : $_->{endTime} ) - $_->{startTime} ) / 60 ),
 
             $_->{xferErrs},
             $_->{xferBadShare},
@@ -190,11 +190,7 @@ printf
 print "-" x ( $hostColWidth + 78 ), "\n";
 
 # Print the rest of the table
-map {
-    printf
-      "%4s [%4d] %-${hostColWidth}s %-16s %6.f %3d %1s%5.f | %4d %5d %4d %3d | %6d\n",
-      @$_;
-  } @Report
+map { printf "%4s [%4d] %-${hostColWidth}s %-16s %6s %3d %1s%5s | %4s %5s %4s %3s | %6d\n", @$_; } @Report
 
 __END__
 
