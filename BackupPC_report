@@ -7,8 +7,8 @@
 #========================================================================
 
 use strict;
-use warnings;              # global flag -w produces warnings from BackupPC::Lib
-use lib '/usr/local/lib';  # <<< change path prefix to match your installation
+use warnings;                # global flag -w produces warnings from BackupPC::Lib
+use lib '/usr/local/lib';    # <<< change path prefix to match your installation
 use BackupPC::Lib;
 use POSIX qw( getuid getgid setuid setgid floor );
 use Getopt::Long;
@@ -130,7 +130,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
     my $period;
     if ( $bpc->{Conf}{FullPeriod} <= 0 || $bpc->{Conf}{IncrPeriod} <= 0 ) {
         print(
-            "*WARNING* nonpositive '\$Conf{FullPeriod}' or '\$Conf{IncrPeriod}' configured for host $_. Using 1d instead.\n"
+"*WARNING* nonpositive '\$Conf{FullPeriod}' or '\$Conf{IncrPeriod}' configured for host $_. Using 1d instead.\n"
         );
         $period = 1;
     }
@@ -144,14 +144,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
 
     # Rise warning if start time of most recent backup is older than
     # $period days + backup window
-    if (
-        time > (
-            $backups[-1]->{startTime} +
-              $period * 86400 +
-              ( $opt_w ? $opt_w : 1 ) * 3600
-        )
-      )
-    {
+    if ( time > ( $backups[-1]->{startTime} + $period * 86400 + ( $opt_w ? $opt_w : 1 ) * 3600 ) ) {
         $warnOutdated = 1
           unless $bpc->{Conf}{BackupsDisable};
         $Report[$#Report][0] .= "O";
@@ -170,8 +163,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
 print POSIX::strftime( '%Y-%m-%d %H:%M', localtime(time) ), "       ",
   scalar @hosts, " host(s) configured ($hostsDisabled disabled)\n\n";
 print "*WARNING* Some backups with ERRORs!", "\n\n" if $warnErr;
-print "*WARNING* Most recent backups for some hosts are older than expected!",
-  "\n\n"
+print "*WARNING* Most recent backups for some hosts are older than expected!", "\n\n"
   if $warnOutdated;
 print "*WARNING* There are in-progress backups!", "\n\n" if $warnActive;
 print "*WARNING* There are partial backups!",     "\n\n" if $warnPartial;
@@ -206,17 +198,14 @@ B<BackupPC_report> --help | -? | --man
 
 =head1 DESCRIPTION
 
-The BackupPC_report(1) is a Perl script that produces reports regarding BackupPC
-backups on STDOUT.
+The BackupPC_report(1) is a Perl script that produces reports regarding BackupPC backups on STDOUT.
 
-Brief reports provide a quick overview of available backups,
-calling out warnings that may require attention.
+Brief reports provide a quick overview of available backups, calling out warnings that may require attention.
 
 =head2 Warning flags
 
-BackupPC_report(1) marks corresponding rows with flags and prepends warning
-messages to the head of the report if backups included in the report have
-errors or the most recent backups for some hosts are older than expected.
+BackupPC_report(1) marks corresponding rows with flags and prepends warning messages to the head of the report if
+backups included in the report have errors or the most recent backups for some hosts are older than expected.
 
 Flags:
 
@@ -246,8 +235,8 @@ backups disabled for this host.
 
 =head1 ARGUMENTS
 
-Multiple space separated F<host> arguments may be specified, each processed in order.
-If argument is omitted, the report will be generated for all hosts.
+Multiple space separated F<host> arguments may be specified, each processed in order. If argument is omitted, the
+report will be generated for all hosts.
 
 Note: any reports not include archive hosts.
 
@@ -257,23 +246,19 @@ Note: any reports not include archive hosts.
 
 =item  B<-a>
 
-Include all available backups in the report. The default is the most recent
-backups only.
+Include all available backups in the report. The default is the most recent backups only.
 
 =item  B<-s>
 
-Suppress output if there are no warnings. Useful in conjunction with B<mail -E>.
-See crontab example below.
+Suppress output if there are no warnings. Useful in conjunction with B<mail -E>. See crontab example below.
 
 =item  B<-w> I<backup_window>
 
-Specify a backup window in hours (floating). The backup window is a difference
-between the earliest expected backup start time and the latest expected backup
-completion time. The default is 1 hour.
-If start time of the most recent backup for a host is older than sum of
-I<$Conf{IncrPeriod}> (or I<$Conf{FullPeriod}> if incremental backups are disabled)
-and the backup window then warning flag "O" will be set to corresponded report row
-and warning message perpended to the report header.
+Specify a backup window in hours (floating). The backup window is a difference between the earliest expected backup
+start time and the latest expected backup completion time. The default is 1 hour. If start time of the most recent
+backup for a host is older than sum of I<$Conf{IncrPeriod}> (or I<$Conf{FullPeriod}> if incremental backups are
+disabled) and the backup window then warning flag "O" will be set to corresponded report row and warning message
+perpended to the report header.
 
 =item B<--help -?>
 
@@ -295,8 +280,7 @@ A Linux, Solaris, or Unix based server.
 
 =item *
 
-Perl version 5.8.0 or later.  If you do not have Perl, please
-see L<http://www.cpan.org>.
+Perl version 5.8.0 or later.  If you do not have Perl, please see L<http://www.cpan.org>.
 
 =item *
 
@@ -314,9 +298,8 @@ Place BackupPC_report where you want.
 
 =item 2
 
-Change lib path at the beginning of the script code to match your installation.
-E.g. for Debian/Ubuntu the lib path should be I</usr/share/backuppc/lib> .
-The default is I</usr/local/lib> .
+Change lib path at the beginning of the script code to match your installation. E.g. for Debian/Ubuntu the lib path
+should be I</usr/share/backuppc/lib> . The default is I</usr/local/lib> .
 
 =back
 
@@ -343,25 +326,14 @@ Alexander Moisseev E<lt>moiseev@mezonplus.ruE<gt>
 
 =head1 CREDITS
 
-Idea and initial quick-hack script by Holger Parplies.
+The idea and initial quick-hack script by Holger Parplies.
 
 =head1 LICENSE and COPYRIGHT
 
- Copyright (c) 2012-2014 Alexander Moisseev
- All rights reserved.
+Copyright (c) 2012-2018, Alexander Moisseev
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
-option) any later version.
+This software is licensed under the terms of the GNU General Public License, version 2 or later.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
-
-You should have received a copy of the GNU General Public License in the
-LICENSE file along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+For the license details, see the file 'LICENSE' included with this distribution.
 
 =cut
