@@ -1,0 +1,25 @@
+﻿sudo: false
+env:
+  global:
+    - MAKEFLAGS="-j 2"
+
+language: perl
+perl: 5.28
+
+cache:
+  directories: ~/perl_modules
+
+before_install:
+  - cpanm --quiet --notest local::lib
+  - eval "$(perl -Mlocal::lib=~/perl_modules)"
+
+install: |
+  # Installing CPAN dependencies
+  cpanm --quiet --notest \
+  Code::TidyAll \
+  Code::TidyAll::Plugin::Test::Vars \
+  Perl::Critic \
+  Perl::Tidy \
+  Pod::Tidy
+
+script: tidyall -a --check-only
