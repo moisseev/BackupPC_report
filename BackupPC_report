@@ -25,10 +25,10 @@ $ENV{PATH} = '/usr/bin';
 
 our ( $opt_a, $opt_f, $opt_s, $opt_w, $opt_help, $opt_man );
 $opt_f = "report";
-GetOptions( "a", "f=s" => "report", "s", "w=f", "help|?", "man" ) || pod2usage(2);
+GetOptions( "a", "f=s" => \$opt_f, "s", "w=f", "help|?", "man" ) || pod2usage(2);
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
 pod2usage(1) if $opt_help;
-pod2usage( -msg => "Unsupported value for -f", -exitstatus => 2 ) if $opt_f !~ /(report|csv)/i;
+pod2usage( -msg => "Unsupported value for -f", -exitstatus => 2 ) if $opt_f !~ /^(report|csv)$/i;
 
 # Set backuppc UID/GID
 my ( undef, undef, $bpcUID, $bpcGID ) = getpwnam($bpcUser);
@@ -161,7 +161,19 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
 # Supress report if no warnings
 !$opt_s || $warnOutdated || $warnErr || $warnActive || $warnPartial || exit 0;
 
-if ( $opt_f =~ /report/i ) {
+if ( $opt_f =~ /^csv$/i ) {
+
+    # csv header
+    printf
+      "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+      "warn_flags", "backup_number", "host_name", "date_time", "size_mb",
+      "lvl", "duratation_min", "xfer_err", "share_err", "file_err", "tar_err",
+      "age_days";
+
+    # csv content
+    map { printf "%s,%d,%s,%s,%s,%d,%s%s,%s,%s,%s,%s,%d\n", @$_; } @Report;
+}
+else {
 
     # Print report header
     print POSIX::strftime( '%Y-%m-%d %H:%M', localtime(time) ), "       ",
@@ -187,18 +199,6 @@ if ( $opt_f =~ /report/i ) {
 
     # Print the rest of the table
     map { printf "%4s [%4d] %-${hostColWidth}s %-16s %6s %3d %1s%5s | %4s %5s %4s %3s | %6d\n", @$_; } @Report;
-}
-elsif ( $opt_f =~ /csv/i ) {
-
-    # csv header
-    printf
-      "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-      "warn_flags", "backup_number", "host_name", "date_time", "size_mb",
-      "lvl", "duratation_min", "xfer_err", "share_err", "file_err", "tar_err",
-      "age_days";
-
-    # csv content
-    map { printf "%s,%d,%s,%s,%s,%d,%s%s,%s,%s,%s,%s,%d\n", @$_; } @Report;
 }
 
 __END__
