@@ -4,7 +4,7 @@ env:
     - MAKEFLAGS="-j 2"
 
 language: perl
-perl: 5.28
+perl: 5.30
 
 cache:
   directories: ~/perl_modules
