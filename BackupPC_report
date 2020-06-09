@@ -26,8 +26,8 @@ $ENV{PATH} = '/usr/bin';
 our ( $opt_a, $opt_f, $opt_s, $opt_w, $opt_help, $opt_man );
 $opt_f = "report";
 GetOptions( "a", "f=s", "s", "w=f", "help|?", "man" ) || pod2usage(2);
-pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
-pod2usage(1) if $opt_help;
+pod2usage( -exitstatus => 0, -verbose => 2 )                      if $opt_man;
+pod2usage(1)                                                      if $opt_help;
 pod2usage( -msg => "Unsupported value for -f", -exitstatus => 2 ) if $opt_f !~ /^(report|csv)$/i;
 
 # Set backuppc UID/GID
