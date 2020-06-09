@@ -1,7 +1,7 @@
 ﻿sudo: false
 env:
   global:
-    - MAKEFLAGS="-j 2"
+    - MAKEFLAGS="-j $(nproc)"
 
 language: perl
 perl: 5.30
@@ -22,4 +22,4 @@ install: |
   Perl::Tidy \
   Pod::Tidy
 
-script: tidyall -a --check-only
+script: tidyall -a --check-only || ( tidyall -a && git diff && false )
