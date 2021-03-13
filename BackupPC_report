@@ -3,7 +3,7 @@
 #========================================================================
 # BackupPC_report
 #========================================================================
-# Version 0.0.7
+# Version 0.0.8
 #========================================================================
 
 use strict;
@@ -23,9 +23,9 @@ my $bpcUser = 'backuppc';
 delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 $ENV{PATH} = '/usr/bin';
 
-our ( $opt_a, $opt_f, $opt_s, $opt_w, $opt_help, $opt_man );
+our ( $opt_a, $opt_f, $opt_s, @types, $opt_w, $opt_help, $opt_man );
 $opt_f = "report";
-GetOptions( "a", "f=s", "s", "w=f", "help|?", "man" ) || pod2usage(2);
+GetOptions( "a", "f=s", "s", "t=s" => \@types, "w=f", "help|?", "man" ) || pod2usage(2);
 pod2usage( -exitstatus => 0, -verbose => 2 )                      if $opt_man;
 pod2usage(1)                                                      if $opt_help;
 pod2usage( -msg => "Unsupported value for -f", -exitstatus => 2 ) if $opt_f !~ /^(report|csv)$/i;
@@ -67,18 +67,41 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
 
     next if ( $bpc->{Conf}{XferMethod} eq "archive" );
 
-    if ($opt_a) {
-        unless ( @backups = $bpc->BackupInfoRead($host) ) {
-            print "*ERROR* Can't get backup info for host $host\n";
-            next;
-        }
+    unless ( @backups = $bpc->BackupInfoRead($host) ) {
+        print "*ERROR* Can't get backup info for host $host\n";
+        next;
     }
-    else {
-        # [-1] in the line below implies most recent backup for each host.
-        unless ( @backups = ( $bpc->BackupInfoRead($host) )[-1] ) {
-            print "*ERROR* Can't get backup info for host $host\n";
-            next;
+
+    if ( @types && !( $types[0] eq 'all' && $opt_a ) ) {
+        my @selected;
+        my %found;
+        if ( $types[0] eq 'all' ) {
+            for (@backups) {
+                next if ( exists( $found{ $_->{type} } ) );
+                $found{ $_->{type} } = '';
+                push @selected, $_;
+            }
         }
+        else {
+            for (@backups) {
+                for my $type (@types) {
+                    if ( $_->{type} eq $type ) {
+                        next if ( !$opt_a && exists( $found{ $_->{type} } ) );
+                        $found{ $_->{type} } = '';
+                        push @selected, $_;
+                    }
+
+                }
+                last if ( !$opt_a && keys %found == @types );
+            }
+        }
+        next unless (@selected);
+        @backups = @selected;
+    }
+    elsif ( !$opt_a ) {
+
+        # [-1] in the line below implies most recent backup for each host.
+        @backups = $backups[-1];
     }
 
     for (@backups) {
@@ -93,8 +116,8 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
             $_->{level},
 
             # Duration in minutes
-            $active ? '*' : '',                                                    # The backup is in progress
-            $_->{endTime} eq '' ? '' : sprintf( '%.f', ( ( $active ? time : $_->{endTime} ) - $_->{startTime} ) / 60 ),
+            $active             ? '*' : '',                                        # The backup is in progress
+            $_->{endTime} eq '' ? ''  : sprintf( '%.f', ( ( $active ? time : $_->{endTime} ) - $_->{startTime} ) / 60 ),
 
             $_->{xferErrs},
             $_->{xferBadShare},
@@ -274,6 +297,11 @@ format.
 =item  B<-s>
 
 Suppress output if there are no warnings. Useful in conjunction with B<mail -E>. See crontab example below.
+
+=item  B<-t> I<backup_type> or B<-t all>
+
+Type of backups to include in the report. The default is any type. The option can be specified multiple times. Also you
+can use I<-t all> to include backups of each type.
 
 =item  B<-w> I<backup_window>
 
