@@ -76,14 +76,14 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
         my @selected;
         my %found;
         if ( $types[0] eq 'all' ) {
-            for (@backups) {
+            for ( reverse @backups ) {
                 next if ( exists( $found{ $_->{type} } ) );
                 $found{ $_->{type} } = '';
                 push @selected, $_;
             }
         }
         else {
-            for (@backups) {
+            for ( reverse @backups ) {
                 for my $type (@types) {
                     if ( $_->{type} eq $type ) {
                         next if ( !$opt_a && exists( $found{ $_->{type} } ) );
@@ -96,7 +96,7 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
             }
         }
         next unless (@selected);
-        @backups = @selected;
+        @backups = reverse @selected;
     }
     elsif ( !$opt_a ) {
 
