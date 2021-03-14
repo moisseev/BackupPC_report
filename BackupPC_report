@@ -23,9 +23,9 @@ my $bpcUser = 'backuppc';
 delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 $ENV{PATH} = '/usr/bin';
 
-our ( $opt_a, $opt_f, $opt_s, @types, $opt_w, $opt_help, $opt_man );
+our ( $opt_a, $opt_f, $opt_l, $opt_s, @types, $opt_w, $opt_help, $opt_man );
 $opt_f = "report";
-GetOptions( "a", "f=s", "s", "t=s" => \@types, "w=f", "help|?", "man" ) || pod2usage(2);
+GetOptions( "a", "f=s", "l=i", "s", "t=s" => \@types, "w=f", "help|?", "man" ) || pod2usage(2);
 pod2usage( -exitstatus => 0, -verbose => 2 )                      if $opt_man;
 pod2usage(1)                                                      if $opt_help;
 pod2usage( -msg => "Unsupported value for -f", -exitstatus => 2 ) if $opt_f !~ /^(report|csv)$/i;
@@ -72,27 +72,38 @@ for my $host ( @ARGV ? @ARGV : @hosts ) {
         next;
     }
 
-    if ( @types && !( $types[0] eq 'all' && $opt_a ) ) {
+    if ( defined $opt_l
+        || @types && !( $types[0] eq 'all' && $opt_a ) )
+    {
         my @selected;
-        my %found;
-        if ( $types[0] eq 'all' ) {
+        if ( defined $opt_l ) {
             for ( reverse @backups ) {
-                next if ( exists( $found{ $_->{type} } ) );
-                $found{ $_->{type} } = '';
-                push @selected, $_;
+                if ( $_->{level} == $opt_l ) {
+                    push @selected, $_;
+                    last unless $opt_a;
+                }
             }
         }
         else {
-            for ( reverse @backups ) {
-                for my $type (@types) {
-                    if ( $_->{type} eq $type ) {
-                        next if ( !$opt_a && exists( $found{ $_->{type} } ) );
-                        $found{ $_->{type} } = '';
-                        push @selected, $_;
-                    }
-
+            my %found;
+            if ( $types[0] eq 'all' ) {
+                for ( reverse @backups ) {
+                    next if ( exists( $found{ $_->{type} } ) );
+                    $found{ $_->{type} } = '';
+                    push @selected, $_;
                 }
-                last if ( !$opt_a && keys %found == @types );
+            }
+            else {
+                for ( reverse @backups ) {
+                    for my $type (@types) {
+                        if ( $_->{type} eq $type ) {
+                            next if ( !$opt_a && exists( $found{ $_->{type} } ) );
+                            $found{ $_->{type} } = '';
+                            push @selected, $_;
+                        }
+                    }
+                    last if ( !$opt_a && keys %found == @types );
+                }
             }
         }
         next unless (@selected);
@@ -293,6 +304,10 @@ Include all available backups in the report. The default is the most recent back
 Outputs the report in the given I<format>. Possible values are "report" and "csv". The default is "report" printing the
 report with additional header lines. "csv" will print the backup information table in a more machine readable CSV
 format.
+
+=item  B<-l> I<backup_level>
+
+Level of backups to include in the report. The default is any level.
 
 =item  B<-s>
 
